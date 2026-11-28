@@ -1,0 +1,133 @@
+:root { --np-navy:#0f1b2d; --np-navy-2:#16263d; --np-accent:#2b7fff; --np-muted:#8aa0bb; }
+html, body { width:100%; min-width:0; overflow-x:hidden; }
+body { background:#f4f6fa; font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; }
+
+/* ---------- App shell ---------- */
+.np-shell { box-sizing:border-box; display:flex; min-height:100vh; width:100%; max-width:100%; overflow-x:clip; }
+.np-sidebar .np-brand { display:flex; align-items:center; gap:.6rem; padding:1.2rem 1.25rem; font-weight:700; color:#fff; font-size:1.15rem; border-bottom:1px solid rgba(255,255,255,.07); }
+.np-sidebar .np-brand i { color:var(--np-accent); font-size:1.5rem; }
+.np-nav { padding:1rem .75rem; display:flex; flex-direction:column; gap:.2rem; }
+.np-nav .np-section { font-size:.7rem; letter-spacing:.08em; text-transform:uppercase; color:var(--np-muted); padding:.9rem .6rem .3rem; }
+.np-nav a { display:flex; align-items:center; gap:.7rem; padding:.6rem .8rem; border-radius:.5rem; color:#cbd5e1; text-decoration:none; font-size:.95rem; }
+.np-nav a:hover { background:var(--np-navy-2); color:#fff; }
+.np-nav a.active { background:var(--np-accent); color:#fff; }
+.np-main { flex:1 1 0%; min-width:0; display:flex; flex-direction:column; }
+.np-topbar { background:#fff; border-bottom:1px solid #e4e8ef; padding:.7rem 1.25rem; display:flex; align-items:center; justify-content:space-between; }
+.np-content { padding:1.5rem; max-width:1200px; width:100%; }
+
+/* ---------- Cards / stats ---------- */
+.np-card { background:#fff; border:1px solid #e4e8ef; border-radius:.75rem; }
+.np-stat { padding:1.1rem 1.25rem; display:flex; align-items:center; gap:1rem; }
+.np-stat .icon { width:48px; height:48px; border-radius:.75rem; display:flex; align-items:center; justify-content:center; font-size:1.4rem; }
+.np-stat .num { font-size:1.6rem; font-weight:700; line-height:1.1; }
+.np-stat .lbl { color:#64748b; font-size:.85rem; }
+.np-empty { text-align:center; color:#64748b; padding:2.5rem 1rem; }
+.np-empty i { font-size:2.2rem; color:#a8b5c8; }
+
+/* ---------- Severity (colour + text, never colour alone) ---------- */
+.sev { font-weight:600; font-size:.75rem; text-transform:uppercase; padding:.3em .6em; border-radius:.4rem; }
+.sev-critical { background:#7f1d1d; color:#fff; }
+.sev-high { background:#dc3545; color:#fff; }
+.sev-medium { background:#ffc107; color:#212529; }
+.sev-low { background:#0dcaf0; color:#052c36; }
+.sev-info { background:#6c757d; color:#fff; }
+
+/* ---------- Guest pages ---------- */
+.np-guest { min-height:100vh; display:flex; align-items:center; justify-content:center; padding:1.5rem;
+  background: radial-gradient(circle at 20% 20%, #1b3a66 0%, var(--np-navy) 55%); }
+.np-guest-card { width:100%; max-width:440px; background:#fff; border-radius:1rem; padding:2rem; box-shadow:0 20px 50px rgba(0,0,0,.35); }
+.np-guest-brand { text-align:center; margin-bottom:1.5rem; }
+.np-guest-brand i { font-size:2.4rem; color:var(--np-accent); }
+.np-guest-brand h1 { font-size:1.5rem; font-weight:700; margin:.3rem 0 0; }
+.np-guest-brand p { color:#64748b; margin:0; font-size:.9rem; }
+
+.table > :not(caption) > * > * { vertical-align: middle; }
+code.np-meta { font-size:.75rem; word-break:break-all; }
+
+/* ---------- Upload drop zone (Day 2) ---------- */
+.np-dropzone { border:2px dashed #b8c4d6; border-radius:.75rem; padding:1.75rem 1rem; text-align:center; color:#475569; background:#f8fafc; cursor:pointer; transition:border-color .15s, background .15s; }
+.np-dropzone:hover, .np-dropzone:focus, .np-dropzone.is-over { border-color:var(--np-accent); background:#eef5ff; outline:none; }
+.np-dropzone i { font-size:2.2rem; color:var(--np-accent); }
+.np-dropzone .link { color:var(--np-accent); text-decoration:underline; }
+.np-hash { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size:.78rem; word-break:break-all; }
+
+/* =====================================================================
+   Day 3: sidebar fix, richer dashboard, scan and finding pages
+   NOTE: Bootstrap's .offcanvas-lg makes the background transparent on
+   large screens (!important). That is why the sidebar had no colour.
+   The selector below is more specific, so our colour wins.
+   ===================================================================== */
+aside.np-sidebar { background: linear-gradient(180deg, #0a1424 0%, #0f2342 100%) !important; color:#cbd5e1; width:260px; min-width:0; flex:0 0 260px; --bs-offcanvas-width:260px; display:flex; flex-direction:column; border-right:1px solid rgba(255,255,255,.06); }
+@media (min-width: 992px) { aside.np-sidebar { position:static; height:auto; overflow:visible; } }
+aside.np-sidebar .np-brand { background:rgba(255,255,255,.03); letter-spacing:.2px; }
+aside.np-sidebar .np-brand i { background:linear-gradient(135deg,#2b7fff,#6ea8ff); -webkit-background-clip:text; background-clip:text; color:transparent; font-size:1.7rem; }
+.np-nav a { transition: background .15s, transform .15s; }
+.np-nav a i { width:1.25rem; text-align:center; opacity:.9; }
+.np-nav a:hover { transform: translateX(2px); }
+.np-nav a.active { background: linear-gradient(90deg,#2b7fff,#4b93ff); box-shadow:0 4px 14px rgba(43,127,255,.35); }
+.np-side-foot { margin-top:auto; padding:1rem 1.1rem; border-top:1px solid rgba(255,255,255,.07); font-size:.8rem; color:var(--np-muted); }
+.np-side-user { display:flex; align-items:center; gap:.7rem; color:#fff; }
+.np-avatar { width:36px; height:36px; border-radius:50%; background:linear-gradient(135deg,#2b7fff,#7c5cff); display:flex; align-items:center; justify-content:center; font-weight:700; color:#fff; flex-shrink:0; }
+.np-topbar { box-shadow:0 1px 0 rgba(15,27,45,.04); }
+.np-content { max-width:1280px; }
+
+/* ---------- Dashboard ---------- */
+.np-hero { background: linear-gradient(120deg,#0f2342 0%,#1b4b9b 60%,#2b7fff 100%); color:#fff; border-radius:1rem; padding:1.6rem 1.75rem; position:relative; overflow:hidden; }
+.np-hero::after { content:""; position:absolute; right:-60px; top:-60px; width:240px; height:240px; border-radius:50%; background:rgba(255,255,255,.08); }
+.np-hero h1 { font-size:1.45rem; font-weight:700; margin:0 0 .3rem; }
+.np-hero p { margin:0; opacity:.85; }
+.np-stat { transition: transform .15s, box-shadow .15s; }
+.np-stat:hover { transform: translateY(-2px); box-shadow:0 8px 20px rgba(15,27,45,.08); }
+.np-stat .icon { color:#fff; }
+.ic-blue { background:linear-gradient(135deg,#2b7fff,#5aa0ff); }
+.ic-green { background:linear-gradient(135deg,#16a34a,#4ade80); }
+.ic-amber { background:linear-gradient(135deg,#f59e0b,#fbbf24); }
+.ic-red { background:linear-gradient(135deg,#dc2626,#f87171); }
+.np-card h2 { font-size:.95rem; font-weight:700; }
+.np-ring { position:relative; width:150px; height:150px; margin:0 auto; }
+.np-ring svg { transform:rotate(-90deg); }
+.np-ring .bg { stroke:#e8edf5; }
+.np-ring .val { transition: stroke-dasharray .8s ease; stroke-linecap:round; }
+.np-ring .center { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+.np-ring .score { font-size:2.1rem; font-weight:800; line-height:1; }
+.np-ring .grade { font-size:.8rem; color:#64748b; margin-top:.2rem; }
+.grade-A { color:#16a34a; } .grade-B { color:#65a30d; } .grade-C { color:#d97706; } .grade-D { color:#ea580c; } .grade-F { color:#dc2626; }
+.np-list-row { display:flex; justify-content:space-between; align-items:center; gap:.75rem; padding:.6rem 0; border-bottom:1px solid #eef1f6; text-decoration:none; color:inherit; }
+.np-list-row:last-child { border-bottom:0; }
+.np-list-row:hover .t { color:var(--np-accent); }
+.np-list-row .t { font-weight:600; font-size:.9rem; }
+.np-list-row .s { font-size:.78rem; color:#64748b; }
+.np-timeline { list-style:none; margin:0; padding:0; }
+.np-timeline li { position:relative; padding:0 0 .9rem 1.4rem; font-size:.85rem; }
+.np-timeline li::before { content:""; position:absolute; left:.2rem; top:.4rem; width:.5rem; height:.5rem; border-radius:50%; background:var(--np-accent); }
+.np-timeline li::after { content:""; position:absolute; left:.4rem; top:1.1rem; bottom:-.2rem; width:1px; background:#dbe3ef; }
+.np-timeline li:last-child::after { display:none; }
+.np-step { display:flex; gap:.75rem; align-items:center; padding:.55rem 0; }
+.np-step .n { width:28px; height:28px; border-radius:50%; background:#e8f0ff; color:var(--np-accent); font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.np-step.done .n { background:#dcfce7; color:#16a34a; }
+
+/* ---------- Scan + finding pages ---------- */
+.np-sevcard { display:block; text-decoration:none; color:inherit; padding:.9rem 1rem; border-radius:.75rem; background:#fff; border:1px solid #e4e8ef; border-left-width:5px; transition: transform .15s; }
+.np-sevcard:hover { transform: translateY(-2px); }
+.np-sevcard .num { font-size:1.6rem; font-weight:800; line-height:1.1; }
+.np-sevcard .lbl { font-size:.75rem; text-transform:uppercase; letter-spacing:.05em; color:#64748b; }
+.np-sevcard.critical { border-left-color:#7f1d1d; } .np-sevcard.high { border-left-color:#dc3545; } .np-sevcard.medium { border-left-color:#ffc107; } .np-sevcard.low { border-left-color:#0dcaf0; } .np-sevcard.info { border-left-color:#6c757d; }
+.np-code { background:#0f172a; color:#e2e8f0; border-radius:.6rem; padding:.5rem 0; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size:.82rem; overflow-x:auto; }
+.np-code .ln { display:flex; padding:0 .9rem; white-space:pre; }
+.np-code .ln .n { color:#64748b; width:3rem; flex-shrink:0; text-align:right; padding-right:.9rem; user-select:none; }
+.np-code .ln.hit { background:rgba(239,68,68,.22); border-left:3px solid #ef4444; padding-left:calc(.9rem - 3px); }
+.np-loc { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size:.8rem; word-break:break-all; }
+.np-fix-box { background:#f0f7ff; border:1px solid #cfe2ff; border-radius:.6rem; padding:.9rem 1rem; }
+
+.np-project-row { min-height:76px; transition:background-color .15s ease; }
+.np-project-row:hover { background:#f8fafc; }
+.np-project-icon { width:44px; height:44px; flex:0 0 44px; display:flex; align-items:center; justify-content:center; }
+.np-project-icon i { display:flex; align-items:center; justify-content:center; line-height:1; }
+
+/* Keep pagination compact even if framework CSS has not loaded. */
+.pagination { display:flex; flex-wrap:wrap; gap:.25rem; padding:0; margin:0; list-style:none; }
+.pagination .page-item { display:inline-block; }
+.pagination .page-link { display:flex; align-items:center; justify-content:center; min-width:2.25rem; height:2.25rem; padding:.35rem .65rem; border:1px solid #d8dee8; border-radius:.35rem; background:#fff; color:#2456a6; text-decoration:none; line-height:1; }
+.pagination .page-item.active .page-link { background:#2b7fff; border-color:#2b7fff; color:#fff; }
+.pagination .page-item.disabled .page-link { color:#94a3b8; background:#f8fafc; cursor:not-allowed; }
+.pagination svg { width:1rem; height:1rem; max-width:1rem; max-height:1rem; }

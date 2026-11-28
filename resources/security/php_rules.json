@@ -1,0 +1,1759 @@
+{
+    "version": 1,
+    "rules": [
+        {
+            "id": "PHP-SQLI-001",
+            "title": "SQL query built directly from user input",
+            "severity": "high",
+            "confidence": "confirmed",
+            "category": "sql_injection",
+            "cwe": "CWE-89",
+            "owasp": "A03:2021 Injection",
+            "extensions": [
+                "php",
+                "phtml",
+                "inc"
+            ],
+            "patterns": [
+                {
+                    "regex": "\\b(?:mysqli?_(?:multi_)?query|pg_query|sqlite_query|mssql_query|odbc_exec)\\s*\\([^;]*\\$_(?:GET|POST|REQUEST|COOKIE)\\b",
+                    "flags": "i"
+                },
+                {
+                    "regex": "->\\s*(?:query|exec|multi_query|real_query)\\s*\\([^;]*\\$_(?:GET|POST|REQUEST|COOKIE)\\b",
+                    "flags": "i"
+                }
+            ],
+            "exclude": "real_escape_string|intval|\\(int\\)|\\(float\\)|floatval|->\\s*quote\\s*\\(|prepare",
+            "skip_if": [],
+            "file_unless": null,
+            "file_requires": null,
+            "redact": false,
+            "description": "A database query contains request data (GET, POST, REQUEST or COOKIE) without parameter binding.",
+            "impact": "An attacker can read, change or delete database data, bypass login, and in some setups run commands on the server.",
+            "remediation": "Use prepared statements with bound parameters (PDO::prepare + execute, or mysqli_prepare). Never concatenate request data into SQL.",
+            "references": []
+        },
+        {
+            "id": "PHP-SQLI-002",
+            "title": "SQL query built with string concatenation or variable interpolation",
+            "severity": "high",
+            "confidence": "potential",
+            "category": "sql_injection",
+            "cwe": "CWE-89",
+            "owasp": "A03:2021 Injection",
+            "extensions": [
+                "php",
+                "phtml",
+                "inc"
+            ],
+            "patterns": [
+                {
+                    "regex": "(?:\"\\s*(?:SELECT|INSERT\\s+INTO|UPDATE|DELETE\\s+FROM|REPLACE\\s+INTO)\\b[^\"]*\"|\\'\\s*(?:SELECT|INSERT\\s+INTO|UPDATE|DELETE\\s+FROM|REPLACE\\s+INTO)\\b[^\\']*\\')\\s*\\.\\s*\\$",
+                    "flags": "i"
+                },
+                {
+                    "regex": "\"\\s*(?:SELECT|INSERT\\s+INTO|UPDATE|DELETE\\s+FROM|REPLACE\\s+INTO)\\b[^\"]*\\$\\w+",
+                    "flags": "i"
+                }
+            ],
+            "exclude": "\\bintval\\b|\\(int\\)|real_escape_string|->\\s*quote\\s*\\(|composer\\s+update",
+            "skip_if": [
+                "PHP-SQLI-001",
+                "PHP-SQLI-003"
+            ],
+            "file_unless": null,
+            "file_requires": null,
+            "redact": false,
+            "description": "An SQL statement is assembled from variables. If any variable can contain user data, the query is injectable.",
+            "impact": "Possible SQL injection leading to data theft or modification.",
+            "remediation": "Replace string building with prepared statements and bound parameters. Whitelist table or column names that cannot be bound.",
+            "references": []
+        },
+        {
+            "id": "PHP-SQLI-003",
+            "title": "Prepared statement text is built from variables",
+            "severity": "high",
+            "confidence": "potential",
+            "category": "sql_injection",
+            "cwe": "CWE-89",
+            "owasp": "A03:2021 Injection",
+            "extensions": [
+                "php",
+                "phtml",
+                "inc"
+            ],
+            "patterns": [
+                {
+                    "regex": "->\\s*prepare\\s*\\(\\s*(?:\"[^\"]*\"|\\'[^\\']*\\')\\s*\\.\\s*\\$",
+                    "flags": "i"
+                },
+                {
+                    "regex": "->\\s*prepare\\s*\\(\\s*\"[^\"]*\\$\\w+",
+                    "flags": "i"
+                }
+            ],
+            "exclude": null,
+            "skip_if": [
+                "PHP-SQLI-001"
+            ],
+            "file_unless": null,
+            "file_requires": null,
+            "redact": false,
+            "description": "prepare() is used, but the SQL text itself contains variables, which defeats the protection.",
+            "impact": "Possible SQL injection even though prepare() is present.",
+            "remediation": "Keep the SQL text constant and pass every value through placeholders (? or :name).",
+            "references": []
+        },
+        {
+            "id": "PHP-SQLI-004",
+            "title": "Removed mysql_* functions are used",
+            "severity": "medium",
+            "confidence": "confirmed",
+            "category": "outdated_api",
+            "cwe": "CWE-477",
+            "owasp": "A06:2021 Vulnerable and Outdated Components",
+            "extensions": [
+                "php",
+                "phtml",
+                "inc"
+            ],
+            "patterns": [
+                {
+                    "regex": "\\bmysql_(?:query|connect|pconnect|fetch_array|fetch_assoc|fetch_row|num_rows|select_db|real_escape_string|escape_string|result)\\s*\\(",
+                    "flags": "i"
+                }
+            ],
+            "exclude": null,
+            "skip_if": [],
+            "file_unless": null,
+            "file_requires": null,
+            "redact": false,
+            "description": "The mysql_* extension was removed in PHP 7. Code using it only runs on very old, unsupported PHP versions and usually has no query parameterisation.",
+            "impact": "Runs on unsupported PHP with known vulnerabilities; encourages injectable queries.",
+            "remediation": "Migrate to PDO or mysqli with prepared statements and upgrade PHP to a supported version.",
+            "references": []
+        },
+        {
+            "id": "PHP-XSS-001",
+            "title": "User input printed to the page without escaping (XSS)",
+            "severity": "high",
+            "confidence": "confirmed",
+            "category": "xss",
+            "cwe": "CWE-79",
+            "owasp": "A03:2021 Injection",
+            "extensions": [
+                "php",
+                "phtml",
+                "inc",
+                "html",
+                "htm"
+            ],
+            "patterns": [
+                {
+                    "regex": "\\b(?:echo|print|print_r|printf|die|exit)\\b[^;]*\\$_(?:GET|POST|REQUEST|COOKIE)\\b",
+                    "flags": "i"
+                },
+                {
+                    "regex": "<\\?=\\s*[^;?]*\\$_(?:GET|POST|REQUEST|COOKIE)\\b",
+                    "flags": "i"
+                },
+                {
+                    "regex": "\\b(?:echo|print)\\b[^;]*\\$_SERVER\\s*\\[\\s*[\\'\"](?:HTTP_[A-Z_]+|REQUEST_URI|QUERY_STRING|PHP_SELF|PATH_INFO)[\\'\"]\\s*\\]",
+                    "flags": "i"
+                }
+            ],
+            "exclude": "htmlspecialchars|htmlentities|intval|\\(int\\)|\\(float\\)|floatval|filter_var|esc_html|esc_attr|absint|number_format|json_encode|urlencode|rawurlencode|md5\\(|sha1\\(|count\\(|isset\\(|empty\\(|strlen",
+            "skip_if": [],
+            "file_unless": null,
+            "file_requires": null,
+            "redact": false,
+            "description": "Request data is written into the HTML response without htmlspecialchars().",
+            "impact": "Attackers can run JavaScript in a visitor's browser: steal sessions, deface pages, or perform actions as the victim.",
+            "remediation": "Escape all output: htmlspecialchars($value, ENT_QUOTES, \"UTF-8\"), or use a template engine with auto-escaping.",
+            "references": []
+        },
+        {
+            "id": "PHP-XSS-002",
+            "title": "$_SERVER[\"PHP_SELF\"] used without escaping",
+            "severity": "medium",
+            "confidence": "potential",
+            "category": "xss",
+            "cwe": "CWE-79",
+            "owasp": "A03:2021 Injection",
+            "extensions": [
+                "php",
+                "phtml",
+                "inc"
+            ],
+            "patterns": [
+                {
+                    "regex": "\\$_SERVER\\s*\\[\\s*[\\'\"]PHP_SELF[\\'\"]\\s*\\]",
+                    "flags": "i"
+                }
+            ],
+            "exclude": "htmlspecialchars|htmlentities",
+            "skip_if": [
+                "PHP-XSS-001"
+            ],
+            "file_unless": null,
+            "file_requires": null,
+            "redact": false,
+            "description": "PHP_SELF contains attacker-controlled text from the URL and is commonly placed in form actions.",
+            "impact": "Reflected cross-site scripting.",
+            "remediation": "Use an empty action attribute or htmlspecialchars($_SERVER[\"PHP_SELF\"], ENT_QUOTES).",
+            "references": []
+        },
+        {
+            "id": "PHP-CMDI-001",
+            "title": "Shell command built from user input",
+            "severity": "critical",
+            "confidence": "confirmed",
+            "category": "command_injection",
+            "cwe": "CWE-78",
+            "owasp": "A03:2021 Injection",
+            "extensions": [
+                "php",
+                "phtml",
+                "inc"
+            ],
+            "patterns": [
+                {
+                    "regex": "\\b(?:system|exec|shell_exec|passthru|popen|proc_open|pcntl_exec|expect_popen)\\s*\\([^;]*\\$_(?:GET|POST|REQUEST|COOKIE)\\b",
+                    "flags": "i"
+                }
+            ],
+            "exclude": "escapeshellarg|escapeshellcmd|intval|\\(int\\)",
+            "skip_if": [],
+            "file_unless": null,
+            "file_requires": null,
+            "redact": false,
+            "description": "Request data is passed to a function that runs operating-system commands.",
+            "impact": "Attackers can run any command on the server (full server takeover).",
+            "remediation": "Avoid shell commands. If unavoidable, use fixed commands with escapeshellarg() on each argument and a strict whitelist.",
+            "references": []
+        },
+        {
+            "id": "PHP-CMDI-002",
+            "title": "Shell command function called with a variable",
+            "severity": "high",
+            "confidence": "potential",
+            "category": "command_injection",
+            "cwe": "CWE-78",
+            "owasp": "A03:2021 Injection",
+            "extensions": [
+                "php",
+                "phtml",
+                "inc"
+            ],
+            "patterns": [
+                {
+                    "regex": "\\b(?:system|exec|shell_exec|passthru|popen|proc_open)\\s*\\([^;]*\\$\\w+",
+                    "flags": "i"
+                }
+            ],
+            "exclude": "escapeshellarg|escapeshellcmd",
+            "skip_if": [
+                "PHP-CMDI-001"
+            ],
+            "file_unless": null,
+            "file_requires": null,
+            "redact": false,
+            "description": "A command-execution function receives a variable. If the value is influenced by a user, commands can be injected.",
+            "impact": "Possible remote command execution.",
+            "remediation": "Validate against a whitelist and wrap each argument in escapeshellarg(), or replace the command with a PHP library.",
+            "references": []
+        },
+        {
+            "id": "PHP-CMDI-003",
+            "title": "Backtick shell execution with a variable",
+            "severity": "high",
+            "confidence": "potential",
+            "category": "command_injection",
+            "cwe": "CWE-78",
+            "owasp": "A03:2021 Injection",
+            "extensions": [
+                "php",
+                "phtml",
+                "inc"
+            ],
+            "patterns": [
+                {
+                    "regex": "(?:=|echo|return|\\(|\\.)\\s*`[^`\\n]*\\$\\w+[^`\\n]*`",
+                    "flags": "i"
+                }
+            ],
+            "exclude": "escapeshellarg",
+            "skip_if": [],
+            "file_unless": null,
+            "file_requires": null,
+            "redact": false,
+            "description": "The backtick operator runs a shell command and here it contains a variable.",
+            "impact": "Possible remote command execution.",
+            "remediation": "Remove the backtick call or escape each argument with escapeshellarg().",
+            "references": []
+        },
+        {
+            "id": "PHP-RCE-001",
+            "title": "Code evaluated from user input",
+            "severity": "critical",
+            "confidence": "confirmed",
+            "category": "code_execution",
+            "cwe": "CWE-95",
+            "owasp": "A03:2021 Injection",
+            "extensions": [
+                "php",
+                "phtml",
+                "inc"
+            ],
+            "patterns": [
+                {
+                    "regex": "\\b(?:eval|assert|create_function)\\s*\\([^;]*\\$_(?:GET|POST|REQUEST|COOKIE)\\b",
+                    "flags": "i"
+                }
+            ],
+            "exclude": null,
+            "skip_if": [],
+            "file_unless": null,
+            "file_requires": null,
+            "redact": false,
+            "description": "Request data is executed as PHP code.",
+            "impact": "Complete remote code execution: the attacker controls the server.",
+            "remediation": "Never evaluate user input. Remove eval/assert/create_function and use real data structures or a whitelist of actions.",
+            "references": []
+        },
+        {
+            "id": "PHP-RCE-002",
+            "title": "eval() or similar dynamic code execution",
+            "severity": "high",
+            "confidence": "potential",
+            "category": "code_execution",
+            "cwe": "CWE-95",
+            "owasp": "A03:2021 Injection",
+            "extensions": [
+                "php",
+                "phtml",
+                "inc"
+            ],
+            "patterns": [
+                {
+                    "regex": "\\beval\\s*\\(\\s*(?!(?:\"[^\"$]*\"|\\'[^\\']*\\')\\s*\\))",
+                    "flags": "i"
+                },
+                {
+                    "regex": "\\b(?:create_function|assert)\\s*\\(\\s*\\$",
+                    "flags": "i"
+                }
+            ],
+            "exclude": null,
+            "skip_if": [
+                "PHP-RCE-001",
+                "PHP-SHELL-001"
+            ],
+            "file_unless": null,
+            "file_requires": null,
+            "redact": false,
+            "description": "The code builds and runs PHP at runtime. This is risky and is also a typical sign of a backdoor.",
+            "impact": "Possible remote code execution.",
+            "remediation": "Replace with normal code, callbacks or a whitelist. Remove it if you do not recognise it.",
+            "references": []
+        },
+        {
+            "id": "PHP-RCE-003",
+            "title": "preg_replace with the /e modifier",
+            "severity": "high",
+            "confidence": "confirmed",
+            "category": "code_execution",
+            "cwe": "CWE-95",
+            "owasp": "A03:2021 Injection",
+            "extensions": [
+                "php",
+                "phtml",
+                "inc"
+            ],
+            "patterns": [
+                {
+                    "regex": "preg_replace\\s*\\(\\s*[\"\\']([^\\w\\s\\\\])[^\"\\']*\\1[a-zA-Z]*e[a-zA-Z]*[\"\\']",
+                    "flags": "i"
+                }
+            ],
+            "exclude": null,
+            "skip_if": [],
+            "file_unless": null,
+            "file_requires": null,
+            "redact": false,
+            "description": "The /e modifier makes preg_replace execute the replacement as PHP code. It was removed in PHP 7.",
+            "impact": "Remote code execution when the subject or replacement contains user input.",
+            "remediation": "Use preg_replace_callback() with a real function instead.",
+            "references": []
+        },
+        {
+            "id": "PHP-RCE-004",
+            "title": "Function called dynamically from user input",
+            "severity": "high",
+            "confidence": "potential",
+            "category": "code_execution",
+            "cwe": "CWE-470",
+            "owasp": "A03:2021 Injection",
+            "extensions": [
+                "php",
+                "phtml",
+                "inc"
+            ],
+            "patterns": [
+                {
+                    "regex": "\\bcall_user_func(?:_array)?\\s*\\([^;]*\\$_(?:GET|POST|REQUEST|COOKIE)\\b",
+                    "flags": "i"
+                },
+                {
+                    "regex": "\\$[a-z_]\\w*\\s*\\(\\s*\\$_(?:GET|POST|REQUEST|COOKIE)\\b",
+                    "flags": "i"
+                }
+            ],
+            "exclude": null,
+            "skip_if": [],
+            "file_unless": null,
+            "file_requires": null,
+            "redact": false,
+            "description": "A function name or callable is chosen or fed from request data.",
+            "impact": "Attackers can call arbitrary PHP functions.",
+            "remediation": "Map allowed actions to fixed callbacks with a whitelist; never call a function name taken from a request.",
+            "references": []
+        },
+        {
+            "id": "PHP-UNSER-001",
+            "title": "unserialize() on user input",
+            "severity": "high",
+            "confidence": "confirmed",
+            "category": "deserialization",
+            "cwe": "CWE-502",
+            "owasp": "A08:2021 Software and Data Integrity Failures",
+            "extensions": [
+                "php",
+                "phtml",
+                "inc"
+            ],
+            "patterns": [
+                {
+                    "regex": "\\bunserialize\\s*\\([^;]*\\$_(?:GET|POST|REQUEST|COOKIE)\\b",
+                    "flags": "i"
+                }
+            ],
+            "exclude": null,
+            "skip_if": [],
+            "file_unless": null,
+            "file_requires": null,
+            "redact": false,
+            "description": "Request data is passed to unserialize(), which can instantiate attacker-chosen objects.",
+            "impact": "Object injection that can lead to remote code execution or file deletion.",
+            "remediation": "Use json_decode() for data exchange. If unserialize is required, pass allowed_classes => false.",
+            "references": []
+        },
+        {
+            "id": "PHP-UNSER-002",
+            "title": "unserialize() without allowed_classes",
+            "severity": "medium",
+            "confidence": "potential",
+            "category": "deserialization",
+            "cwe": "CWE-502",
+            "owasp": "A08:2021 Software and Data Integrity Failures",
+            "extensions": [
+                "php",
+                "phtml",
+                "inc"
+            ],
+            "patterns": [
+                {
+                    "regex": "\\bunserialize\\s*\\(\\s*\\$\\w+",
+                    "flags": "i"
+                }
+            ],
+            "exclude": "allowed_classes",
+            "skip_if": [
+                "PHP-UNSER-001"
+            ],
+            "file_unless": null,
+            "file_requires": null,
+            "redact": false,
+            "description": "unserialize() is used on a variable. If the data can be influenced by a user, object injection is possible.",
+            "impact": "Possible object injection.",
+            "remediation": "Prefer json_decode(). Otherwise use unserialize($data, [\"allowed_classes\" => false]).",
+            "references": []
+        },
+        {
+            "id": "PHP-SHELL-001",
+            "title": "Obfuscated eval (typical web shell / backdoor)",
+            "severity": "critical",
+            "confidence": "confirmed",
+            "category": "backdoor",
+            "cwe": "CWE-506",
+            "owasp": "A08:2021 Software and Data Integrity Failures",
+            "extensions": [
+                "php",
+                "phtml",
+                "inc"
+            ],
+            "patterns": [
+                {
+                    "regex": "\\beval\\s*\\(\\s*(?:@\\s*)?(?:base64_decode|gzinflate|gzuncompress|gzdecode|str_rot13|rawurldecode|urldecode|hex2bin|strrev)\\s*\\(",
+                    "flags": "i"
+                }
+            ],
+            "exclude": null,
+            "skip_if": [],
+            "file_unless": null,
+            "file_requires": null,
+            "redact": false,
+            "description": "eval() runs decoded or decompressed text. Legitimate code almost never does this; malware and backdoors always do.",
+            "impact": "The file very likely contains a backdoor that gives an attacker full control of the server.",
+            "remediation": "Treat the server as compromised: remove the file, find how it got there, rotate all passwords and keys, and restore code from a trusted source.",
+            "references": []
+        },
+        {
+            "id": "PHP-SHELL-002",
+            "title": "Request value used as a function name (web shell pattern)",
+            "severity": "critical",
+            "confidence": "confirmed",
+            "category": "backdoor",
+            "cwe": "CWE-94",
+            "owasp": "A03:2021 Injection",
+            "extensions": [
+                "php",
+                "phtml",
+                "inc"
+            ],
+            "patterns": [
+                {
+                    "regex": "\\$_(?:GET|POST|REQUEST|COOKIE)\\s*\\[[^\\]]+\\]\\s*\\(",
+                    "flags": "i"
+                }
+            ],
+            "exclude": null,
+            "skip_if": [],
+            "file_unless": null,
+            "file_requires": null,
+            "redact": false,
+            "description": "Code like $_POST[\"x\"]($_POST[\"y\"]) lets a remote visitor run any PHP function with any argument.",
+            "impact": "Remote code execution; this is the classic one-line web shell.",
+            "remediation": "Remove this code. Check the whole project and server for other injected files.",
+            "references": []
+        },
+        {
+            "id": "PHP-SHELL-003",
+            "title": "Known web shell signature found",
+            "severity": "high",
+            "confidence": "potential",
+            "category": "backdoor",
+            "cwe": "CWE-506",
+            "owasp": "A08:2021 Software and Data Integrity Failures",
+            "extensions": [
+                "php",
+                "phtml",
+                "inc",
+                "html",
+                "htm",
+                "txt",
+                "js"
+            ],
+            "patterns": [
+                {
+                    "regex": "\\b(?:c99shell|r57shell|wso[ _]?shell|b374k|FilesMan|WSO_VERSION|php[ _-]?reverse[ _-]?shell|php2shell|web[ _-]?shell|Safe_Mode\\s+Bypass|Priv8)\\b",
+                    "flags": "i"
+                }
+            ],
+            "exclude": null,
+            "skip_if": [],
+            "file_unless": null,
+            "file_requires": null,
+            "redact": false,
+            "description": "The text matches the name or marker of a publicly known web shell or hacking tool.",
+            "impact": "The project may contain or be derived from a backdoor, or the file may be a deliberate hacking tool.",
+            "remediation": "Review the file manually. If it is not intentional, remove it and investigate how it was added.",
+            "references": []
+        },
+        {
+            "id": "PHP-SHELL-004",
+            "title": "Heavily obfuscated code",
+            "severity": "medium",
+            "confidence": "potential",
+            "category": "backdoor",
+            "cwe": "CWE-506",
+            "owasp": "A08:2021 Software and Data Integrity Failures",
+            "extensions": [
+                "php",
+                "phtml",
+                "inc"
+            ],
+            "patterns": [
+                {
+                    "regex": "\\bbase64_decode\\s*\\(\\s*[\"\\'][A-Za-z0-9+/=]{120,}[\"\\']",
+                    "flags": "i"
+                },
+                {
+                    "regex": "(?:chr\\s*\\(\\s*\\d+\\s*\\)\\s*\\.\\s*){5,}",
+                    "flags": "i"
+                },
+                {
+                    "regex": "(?:\\\\x[0-9a-f]{2}){16,}",
+                    "flags": "i"
+                }
+            ],
+            "exclude": null,
+            "skip_if": [],
+            "file_unless": null,
+            "file_requires": null,
+            "redact": false,
+            "description": "Very long encoded strings or character-by-character code building are used to hide what the code does.",
+            "impact": "Hidden malicious logic is possible.",
+            "remediation": "Decode and review the content. Replace with readable code or remove.",
+            "references": []
+        },
+        {
+            "id": "PHP-LFI-001",
+            "title": "File include controlled by user input (LFI/RFI)",
+            "severity": "high",
+            "confidence": "confirmed",
+            "category": "file_inclusion",
+            "cwe": "CWE-98",
+            "owasp": "A03:2021 Injection",
+            "extensions": [
+                "php",
+                "phtml",
+                "inc"
+            ],
+            "patterns": [
+                {
+                    "regex": "\\b(?:include|include_once|require|require_once)\\b[^;]*\\$_(?:GET|POST|REQUEST|COOKIE)\\b",
+                    "flags": "i"
+                }
+            ],
+            "exclude": "basename|realpath|in_array|array_key_exists|intval",
+            "skip_if": [],
+            "file_unless": null,
+            "file_requires": null,
+            "redact": false,
+            "description": "The path passed to include/require comes from the request.",
+            "impact": "Attackers can read local files or, with allow_url_include, run their own PHP code.",
+            "remediation": "Never include a path from user input. Map short keys to fixed files with a whitelist.",
+            "references": []
+        },
+        {
+            "id": "PHP-LFI-002",
+            "title": "include/require uses a variable path",
+            "severity": "medium",
+            "confidence": "potential",
+            "category": "file_inclusion",
+            "cwe": "CWE-98",
+            "owasp": "A03:2021 Injection",
+            "extensions": [
+                "php",
+                "phtml",
+                "inc"
+            ],
+            "patterns": [
+                {
+                    "regex": "\\b(?:include|include_once|require|require_once)\\b\\s*\\(?\\s*\\$\\w+",
+                    "flags": "i"
+                }
+            ],
+            "exclude": "__DIR__",
+            "skip_if": [
+                "PHP-LFI-001"
+            ],
+            "file_unless": null,
+            "file_requires": null,
+            "redact": false,
+            "description": "A file is included from a variable. If the variable can be influenced by a user, arbitrary files can be loaded.",
+            "impact": "Possible local or remote file inclusion.",
+            "remediation": "Use fixed paths or a whitelist of allowed files.",
+            "references": []
+        },
+        {
+            "id": "PHP-SSRF-001",
+            "title": "Server makes a request to a user-supplied URL (SSRF)",
+            "severity": "high",
+            "confidence": "confirmed",
+            "category": "ssrf",
+            "cwe": "CWE-918",
+            "owasp": "A10:2021 Server-Side Request Forgery",
+            "extensions": [
+                "php",
+                "phtml",
+                "inc"
+            ],
+            "patterns": [
+                {
+                    "regex": "\\bcurl_init\\s*\\([^;]*\\$_(?:GET|POST|REQUEST|COOKIE)\\b",
+                    "flags": "i"
+                },
+                {
+                    "regex": "CURLOPT_URL\\s*,\\s*[^;]*\\$_(?:GET|POST|REQUEST|COOKIE)\\b",
+                    "flags": "i"
+                },
+                {
+                    "regex": "\\b(?:get_headers|fsockopen|SoapClient)\\s*\\(\\s*\\$_(?:GET|POST|REQUEST|COOKIE)\\b",
+                    "flags": "i"
+                }
+            ],
+            "exclude": null,
+            "skip_if": [],
+            "file_unless": null,
+            "file_requires": null,
+            "redact": false,
+            "description": "The server fetches a URL that comes from the request.",
+            "impact": "Attackers can make the server reach internal services, cloud metadata endpoints or other hosts.",
+            "remediation": "Allow only whitelisted hosts, resolve and block private IP ranges, and disable redirects.",
+            "references": []
+        },
+        {
+            "id": "PHP-FILE-001",
+            "title": "File path or URL controlled by user input (path traversal / arbitrary file access)",
+            "severity": "high",
+            "confidence": "confirmed",
+            "category": "path_traversal",
+            "cwe": "CWE-22",
+            "owasp": "A01:2021 Broken Access Control",
+            "extensions": [
+                "php",
+                "phtml",
+                "inc"
+            ],
+            "patterns": [
+                {
+                    "regex": "\\b(?:file_get_contents|fopen|readfile|file|fpassthru|highlight_file|show_source|unlink|file_put_contents|copy|rename|mkdir|rmdir|scandir|opendir|is_file|file_exists)\\s*\\([^;]*\\$_(?:GET|POST|REQUEST|COOKIE)\\b",
+                    "flags": "i"
+                }
+            ],
+            "exclude": "basename|realpath|intval|md5\\(|sha1\\(",
+            "skip_if": [
+                "PHP-SSRF-001"
+            ],
+            "file_unless": null,
+            "file_requires": null,
+            "redact": false,
+            "description": "A file function receives a path taken from the request.",
+            "impact": "Attackers can read, overwrite or delete files outside the intended folder using ../ sequences.",
+            "remediation": "Use basename(), realpath() and verify the result starts with an allowed base directory, or use a whitelist of file ids.",
+            "references": []
+        },
+        {
+            "id": "PHP-UPLOAD-001",
+            "title": "Uploaded file saved under the client-supplied name",
+            "severity": "high",
+            "confidence": "confirmed",
+            "category": "file_upload",
+            "cwe": "CWE-434",
+            "owasp": "A04:2021 Insecure Design",
+            "extensions": [
+                "php",
+                "phtml",
+                "inc"
+            ],
+            "patterns": [
+                {
+                    "regex": "\\bmove_uploaded_file\\s*\\([^;]*\\$_FILES\\s*\\[[^\\]]+\\]\\s*\\[\\s*[\\'\"]name[\\'\"]\\s*\\]",
+                    "flags": "i"
+                }
+            ],
+            "exclude": null,
+            "skip_if": [],
+            "file_unless": null,
+            "file_requires": null,
+            "redact": false,
+            "description": "The original file name sent by the browser is used as the saved file name.",
+            "impact": "An attacker can upload a .php file and run it on the server.",
+            "remediation": "Generate a random file name, allow only specific extensions and MIME types, store uploads outside the web root.",
+            "references": []
+        },
+        {
+            "id": "PHP-UPLOAD-002",
+            "title": "File upload without type checks",
+            "severity": "high",
+            "confidence": "potential",
+            "category": "file_upload",
+            "cwe": "CWE-434",
+            "owasp": "A04:2021 Insecure Design",
+            "extensions": [
+                "php",
+                "phtml",
+                "inc"
+            ],
+            "patterns": [
+                {
+                    "regex": "\\bmove_uploaded_file\\s*\\(",
+                    "flags": "i"
+                }
+            ],
+            "exclude": null,
+            "skip_if": [
+                "PHP-UPLOAD-001"
+            ],
+            "file_unless": "getimagesize|finfo_file|finfo_open|mime_content_type|in_array\\s*\\([^;]*(?:ext|type|mime)|PATHINFO_EXTENSION",
+            "file_requires": null,
+            "redact": false,
+            "description": "move_uploaded_file is used and no extension or content-type check was found in this file.",
+            "impact": "Possible upload of executable scripts.",
+            "remediation": "Check the extension against a whitelist, verify content (finfo / getimagesize), use random names, and store outside the web root.",
+            "references": []
+        },
+        {
+            "id": "PHP-CRYPTO-001",
+            "title": "Weak or fast hash used for passwords",
+            "severity": "high",
+            "confidence": "confirmed",
+            "category": "weak_crypto",
+            "cwe": "CWE-916",
+            "owasp": "A02:2021 Cryptographic Failures",
+            "extensions": [
+                "php",
+                "phtml",
+                "inc"
+            ],
+            "patterns": [
+                {
+                    "regex": "\\b(?:md5|sha1)\\s*\\([^;]*pass(?:word|wd|wrd)?",
+                    "flags": "i"
+                },
+                {
+                    "regex": "\\bhash\\s*\\(\\s*[\"\\'](?:md5|sha1|sha256|sha512)[\"\\']\\s*,\\s*[^;]*pass",
+                    "flags": "i"
+                }
+            ],
+            "exclude": null,
+            "skip_if": [],
+            "file_unless": null,
+            "file_requires": null,
+            "redact": false,
+            "description": "MD5, SHA-1 and plain SHA-2 are fast hashes that can be cracked quickly.",
+            "impact": "If the database leaks, most passwords can be recovered.",
+            "remediation": "Use password_hash($password, PASSWORD_DEFAULT) and password_verify(). Rehash existing users at next login.",
+            "references": []
+        },
+        {
+            "id": "PHP-CRYPTO-002",
+            "title": "Predictable random value used for a security token",
+            "severity": "medium",
+            "confidence": "potential",
+            "category": "weak_crypto",
+            "cwe": "CWE-330",
+            "owasp": "A02:2021 Cryptographic Failures",
+            "extensions": [
+                "php",
+                "phtml",
+                "inc"
+            ],
+            "patterns": [
+                {
+                    "regex": "(?:token|csrf|otp|nonce|reset|secret|api_?key|session_?id|salt|verification|captcha)[^;\\n]{0,60}\\b(?:rand|mt_rand|uniqid|srand|mt_srand|lcg_value|microtime|time)\\s*\\(",
+                    "flags": "i"
+                }
+            ],
+            "exclude": "random_bytes|random_int|openssl_random",
+            "skip_if": [],
+            "file_unless": null,
+            "file_requires": null,
+            "redact": false,
+            "description": "rand(), mt_rand(), uniqid() and time() are predictable and must not create secrets.",
+            "impact": "Attackers may guess reset links, tokens or keys.",
+            "remediation": "Use bin2hex(random_bytes(32)) or random_int().",
+            "references": []
+        },
+        {
+            "id": "PHP-CRYPTO-003",
+            "title": "Obsolete or weak encryption algorithm",
+            "severity": "medium",
+            "confidence": "confirmed",
+            "category": "weak_crypto",
+            "cwe": "CWE-327",
+            "owasp": "A02:2021 Cryptographic Failures",
+            "extensions": [
+                "php",
+                "phtml",
+                "inc"
+            ],
+            "patterns": [
+                {
+                    "regex": "\\bmcrypt_\\w+\\s*\\(",
+                    "flags": "i"
+                },
+                {
+                    "regex": "\\bMCRYPT_[A-Z0-9_]+",
+                    "flags": "i"
+                },
+                {
+                    "regex": "openssl_(?:en|de)crypt\\s*\\([^;]*[\"\\'](?:[a-z0-9-]*-ecb|des[a-z0-9-]*|rc4[a-z0-9-]*|bf-[a-z0-9-]*)[\"\\']",
+                    "flags": "i"
+                }
+            ],
+            "exclude": null,
+            "skip_if": [],
+            "file_unless": null,
+            "file_requires": null,
+            "redact": false,
+            "description": "mcrypt is removed from PHP, and DES, RC4 and ECB mode are broken or leak data patterns.",
+            "impact": "Encrypted data may be recovered or modified.",
+            "remediation": "Use openssl with aes-256-gcm (or libsodium) and a random IV/nonce.",
+            "references": []
+        },
+        {
+            "id": "PHP-CRYPTO-004",
+            "title": "TLS certificate verification disabled",
+            "severity": "medium",
+            "confidence": "confirmed",
+            "category": "weak_crypto",
+            "cwe": "CWE-295",
+            "owasp": "A02:2021 Cryptographic Failures",
+            "extensions": [
+                "php",
+                "phtml",
+                "inc"
+            ],
+            "patterns": [
+                {
+                    "regex": "CURLOPT_SSL_VERIFY(?:PEER|HOST)\\s*,\\s*(?:false|0)\\b",
+                    "flags": "i"
+                },
+                {
+                    "regex": "[\"\\']verify_peer(?:_name)?[\"\\']\\s*=>\\s*false",
+                    "flags": "i"
+                },
+                {
+                    "regex": "[\"\\']verify[\"\\']\\s*=>\\s*false",
+                    "flags": "i"
+                }
+            ],
+            "exclude": null,
+            "skip_if": [],
+            "file_unless": null,
+            "file_requires": null,
+            "redact": false,
+            "description": "The code turns off certificate checking for HTTPS connections.",
+            "impact": "Man-in-the-middle attackers can read and change traffic.",
+            "remediation": "Remove the override and keep verification enabled; install the proper CA bundle if needed.",
+            "references": []
+        },
+        {
+            "id": "PHP-SESSION-001",
+            "title": "Login without session_regenerate_id (session fixation)",
+            "severity": "medium",
+            "confidence": "potential",
+            "category": "session",
+            "cwe": "CWE-384",
+            "owasp": "A07:2021 Identification and Authentication Failures",
+            "extensions": [
+                "php",
+                "phtml",
+                "inc"
+            ],
+            "patterns": [
+                {
+                    "regex": "\\$_SESSION\\s*\\[\\s*[\\'\"](?:user(?:_?id|name)?|uid|logged_?in|loggedin|admin|is_admin|role|auth\\w*|login\\w*)[\\'\"]\\s*\\]\\s*=",
+                    "flags": "i"
+                }
+            ],
+            "exclude": null,
+            "skip_if": [],
+            "file_unless": "session_regenerate_id",
+            "file_requires": null,
+            "redact": false,
+            "description": "A login state is stored in the session, but the session id is never regenerated in this file.",
+            "impact": "An attacker who knows a visitor's session id before login can take over the account.",
+            "remediation": "Call session_regenerate_id(true) right after a successful login.",
+            "references": []
+        },
+        {
+            "id": "PHP-COOKIE-001",
+            "title": "Cookie set without security flags",
+            "severity": "low",
+            "confidence": "potential",
+            "category": "session",
+            "cwe": "CWE-614",
+            "owasp": "A05:2021 Security Misconfiguration",
+            "extensions": [
+                "php",
+                "phtml",
+                "inc"
+            ],
+            "patterns": [
+                {
+                    "regex": "\\bsetcookie\\s*\\(\\s*[^,;)]+,\\s*[^,;)]+\\s*\\)",
+                    "flags": "i"
+                }
+            ],
+            "exclude": null,
+            "skip_if": [],
+            "file_unless": null,
+            "file_requires": null,
+            "redact": false,
+            "description": "setcookie() is called with only a name and value, so HttpOnly, Secure and SameSite are missing.",
+            "impact": "Cookies can be read by scripts or sent over plain HTTP.",
+            "remediation": "Pass an options array: httponly => true, secure => true, samesite => \"Lax\".",
+            "references": []
+        },
+        {
+            "id": "PHP-CSRF-001",
+            "title": "Form without CSRF protection",
+            "severity": "medium",
+            "confidence": "potential",
+            "category": "csrf",
+            "cwe": "CWE-352",
+            "owasp": "A01:2021 Broken Access Control",
+            "extensions": [
+                "php",
+                "phtml",
+                "inc",
+                "html",
+                "htm"
+            ],
+            "patterns": [
+                {
+                    "regex": "<form\\b[^>]*\\bmethod\\s*=\\s*[\"\\']?post",
+                    "flags": "i"
+                }
+            ],
+            "exclude": null,
+            "skip_if": [],
+            "file_unless": "csrf|_token|nonce|xsrf|anti_?forgery",
+            "file_requires": null,
+            "redact": false,
+            "description": "A POST form exists and no CSRF token or similar protection was found in this file.",
+            "impact": "Another website can make a logged-in user submit actions without knowing.",
+            "remediation": "Add a per-session random token to every state-changing form and verify it on the server.",
+            "references": []
+        },
+        {
+            "id": "PHP-REDIRECT-001",
+            "title": "Redirect target taken from user input",
+            "severity": "medium",
+            "confidence": "confirmed",
+            "category": "redirect",
+            "cwe": "CWE-601",
+            "owasp": "A01:2021 Broken Access Control",
+            "extensions": [
+                "php",
+                "phtml",
+                "inc"
+            ],
+            "patterns": [
+                {
+                    "regex": "\\bheader\\s*\\(\\s*[\"\\']\\s*Location\\s*:[^;]*\\$_(?:GET|POST|REQUEST|COOKIE)\\b",
+                    "flags": "i"
+                }
+            ],
+            "exclude": "urlencode|basename|parse_url|in_array|filter_var",
+            "skip_if": [],
+            "file_unless": null,
+            "file_requires": null,
+            "redact": false,
+            "description": "The Location header uses request data without checking it.",
+            "impact": "Phishing: victims are sent from your trusted site to a malicious one.",
+            "remediation": "Only redirect to whitelisted paths or relative URLs.",
+            "references": []
+        },
+        {
+            "id": "PHP-AUTHZ-001",
+            "title": "Permission decided by a user-controlled value",
+            "severity": "high",
+            "confidence": "potential",
+            "category": "access_control",
+            "cwe": "CWE-639",
+            "owasp": "A01:2021 Broken Access Control",
+            "extensions": [
+                "php",
+                "phtml",
+                "inc"
+            ],
+            "patterns": [
+                {
+                    "regex": "\\$_(?:GET|COOKIE|REQUEST)\\s*\\[\\s*[\\'\"](?:admin|is_?admin|isadmin|role|debug|auth|authorized|logged_?in|user_?type|level)[\\'\"]\\s*\\]",
+                    "flags": "i"
+                }
+            ],
+            "exclude": null,
+            "skip_if": [],
+            "file_unless": null,
+            "file_requires": null,
+            "redact": false,
+            "description": "A role, admin flag or login state is read directly from the request.",
+            "impact": "Anyone can give themselves admin rights by editing the URL or cookie.",
+            "remediation": "Decide permissions only from server-side session data checked against the database.",
+            "references": []
+        },
+        {
+            "id": "PHP-VAROW-001",
+            "title": "Variables overwritten from user input",
+            "severity": "high",
+            "confidence": "confirmed",
+            "category": "injection",
+            "cwe": "CWE-621",
+            "owasp": "A04:2021 Insecure Design",
+            "extensions": [
+                "php",
+                "phtml",
+                "inc"
+            ],
+            "patterns": [
+                {
+                    "regex": "\\bextract\\s*\\([^;]*\\$_(?:GET|POST|REQUEST|COOKIE)\\b",
+                    "flags": "i"
+                },
+                {
+                    "regex": "\\$\\$\\w+\\s*=\\s*\\$_(?:GET|POST|REQUEST|COOKIE)\\b",
+                    "flags": "i"
+                },
+                {
+                    "regex": "\\bparse_str\\s*\\(\\s*[^,)]+\\)\\s*;",
+                    "flags": "i"
+                }
+            ],
+            "exclude": null,
+            "skip_if": [],
+            "file_unless": null,
+            "file_requires": null,
+            "redact": false,
+            "description": "extract(), $$variable or parse_str() without a second argument create variables from request data.",
+            "impact": "Attackers can overwrite internal variables, such as $isAdmin or file paths.",
+            "remediation": "Read only the specific keys you expect and validate them. Never use extract() on request data.",
+            "references": []
+        },
+        {
+            "id": "PHP-MAIL-001",
+            "title": "Mail function called with user input (header injection)",
+            "severity": "medium",
+            "confidence": "confirmed",
+            "category": "injection",
+            "cwe": "CWE-93",
+            "owasp": "A03:2021 Injection",
+            "extensions": [
+                "php",
+                "phtml",
+                "inc"
+            ],
+            "patterns": [
+                {
+                    "regex": "\\bmail\\s*\\([^;]*\\$_(?:GET|POST|REQUEST|COOKIE)\\b",
+                    "flags": "i"
+                }
+            ],
+            "exclude": "filter_var|FILTER_VALIDATE_EMAIL|str_replace",
+            "skip_if": [],
+            "file_unless": null,
+            "file_requires": null,
+            "redact": false,
+            "description": "Request data is used in mail() arguments.",
+            "impact": "Attackers can add extra recipients or headers and send spam through your server.",
+            "remediation": "Validate the email with filter_var, strip line breaks, and use a mail library.",
+            "references": []
+        },
+        {
+            "id": "PHP-XXE-001",
+            "title": "XML external entity processing enabled",
+            "severity": "high",
+            "confidence": "confirmed",
+            "category": "xxe",
+            "cwe": "CWE-611",
+            "owasp": "A05:2021 Security Misconfiguration",
+            "extensions": [
+                "php",
+                "phtml",
+                "inc"
+            ],
+            "patterns": [
+                {
+                    "regex": "\\blibxml_disable_entity_loader\\s*\\(\\s*false",
+                    "flags": "i"
+                },
+                {
+                    "regex": "\\bLIBXML_NOENT\\b",
+                    "flags": "i"
+                },
+                {
+                    "regex": "\\bLIBXML_DTDLOAD\\b",
+                    "flags": "i"
+                }
+            ],
+            "exclude": null,
+            "skip_if": [],
+            "file_unless": null,
+            "file_requires": null,
+            "redact": false,
+            "description": "The XML parser is configured to load external entities.",
+            "impact": "Attackers can read server files or make internal requests through crafted XML.",
+            "remediation": "Remove LIBXML_NOENT/LIBXML_DTDLOAD and never enable entity loading for untrusted XML.",
+            "references": []
+        },
+        {
+            "id": "PHP-CONF-001",
+            "title": "phpinfo() exposed",
+            "severity": "medium",
+            "confidence": "confirmed",
+            "category": "misconfiguration",
+            "cwe": "CWE-200",
+            "owasp": "A05:2021 Security Misconfiguration",
+            "extensions": [
+                "php",
+                "phtml",
+                "inc"
+            ],
+            "patterns": [
+                {
+                    "regex": "\\bphpinfo\\s*\\(",
+                    "flags": "i"
+                }
+            ],
+            "exclude": null,
+            "skip_if": [],
+            "file_unless": null,
+            "file_requires": null,
+            "redact": false,
+            "description": "phpinfo() prints the full server configuration, paths and modules.",
+            "impact": "Gives attackers detailed information to plan attacks.",
+            "remediation": "Remove phpinfo() calls from deployed code.",
+            "references": []
+        },
+        {
+            "id": "PHP-CONF-002",
+            "title": "Detailed errors or debug mode enabled",
+            "severity": "medium",
+            "confidence": "confirmed",
+            "category": "misconfiguration",
+            "cwe": "CWE-209",
+            "owasp": "A05:2021 Security Misconfiguration",
+            "extensions": [
+                "php",
+                "phtml",
+                "inc",
+                "ini",
+                "htaccess",
+                "env"
+            ],
+            "patterns": [
+                {
+                    "regex": "ini_set\\s*\\(\\s*[\"\\']display_errors[\"\\']\\s*,\\s*(?:[\"\\']?(?:1|on|true|stdout)[\"\\']?|true)\\s*\\)",
+                    "flags": "i"
+                },
+                {
+                    "regex": "^\\s*display_errors\\s*=\\s*(?:on|1|true|stdout)\\b",
+                    "flags": "i"
+                },
+                {
+                    "regex": "php_(?:flag|value)\\s+display_errors\\s+(?:on|1)",
+                    "flags": "i"
+                },
+                {
+                    "regex": "^\\s*APP_DEBUG\\s*=\\s*true\\b",
+                    "flags": "i"
+                }
+            ],
+            "exclude": null,
+            "skip_if": [],
+            "file_unless": null,
+            "file_requires": null,
+            "redact": false,
+            "description": "Error messages and stack traces are shown to visitors.",
+            "impact": "Leaks file paths, SQL queries and secrets.",
+            "remediation": "Disable display_errors and APP_DEBUG in production; log errors to a file instead.",
+            "references": []
+        },
+        {
+            "id": "PHP-CONF-003",
+            "title": "allow_url_include enabled",
+            "severity": "high",
+            "confidence": "confirmed",
+            "category": "misconfiguration",
+            "cwe": "CWE-829",
+            "owasp": "A05:2021 Security Misconfiguration",
+            "extensions": [
+                "php",
+                "phtml",
+                "inc",
+                "ini",
+                "htaccess"
+            ],
+            "patterns": [
+                {
+                    "regex": "^\\s*allow_url_include\\s*=\\s*(?:on|1|true)\\b",
+                    "flags": "i"
+                },
+                {
+                    "regex": "php_flag\\s+allow_url_include\\s+on",
+                    "flags": "i"
+                },
+                {
+                    "regex": "ini_set\\s*\\(\\s*[\"\\']allow_url_include[\"\\']\\s*,\\s*[\"\\']?(?:1|on|true)",
+                    "flags": "i"
+                }
+            ],
+            "exclude": null,
+            "skip_if": [],
+            "file_unless": null,
+            "file_requires": null,
+            "redact": false,
+            "description": "PHP is allowed to include code from remote URLs.",
+            "impact": "Turns any file inclusion bug into remote code execution.",
+            "remediation": "Set allow_url_include = Off.",
+            "references": []
+        },
+        {
+            "id": "PHP-CONF-004",
+            "title": "CORS allows every origin",
+            "severity": "medium",
+            "confidence": "potential",
+            "category": "misconfiguration",
+            "cwe": "CWE-942",
+            "owasp": "A05:2021 Security Misconfiguration",
+            "extensions": [
+                "php",
+                "phtml",
+                "inc",
+                "htaccess",
+                "js"
+            ],
+            "patterns": [
+                {
+                    "regex": "Access-Control-Allow-Origin\\s*:\\s*\\*",
+                    "flags": "i"
+                },
+                {
+                    "regex": "Header\\s+(?:always\\s+)?set\\s+Access-Control-Allow-Origin\\s+[\"\\']?\\*",
+                    "flags": "i"
+                }
+            ],
+            "exclude": null,
+            "skip_if": [],
+            "file_unless": null,
+            "file_requires": null,
+            "redact": false,
+            "description": "Any website may read responses from this application in a visitor's browser.",
+            "impact": "Data theft from logged-in users when combined with credentials or sensitive data.",
+            "remediation": "Allow only specific trusted origins.",
+            "references": []
+        },
+        {
+            "id": "PHP-CONF-005",
+            "title": "Insecure server configuration",
+            "severity": "low",
+            "confidence": "potential",
+            "category": "misconfiguration",
+            "cwe": "CWE-16",
+            "owasp": "A05:2021 Security Misconfiguration",
+            "extensions": [
+                "ini",
+                "htaccess"
+            ],
+            "patterns": [
+                {
+                    "regex": "^\\s*expose_php\\s*=\\s*(?:on|1)\\b",
+                    "flags": "i"
+                },
+                {
+                    "regex": "Options\\s+[^#\\n]*\\+?Indexes\\b",
+                    "flags": "i"
+                }
+            ],
+            "exclude": null,
+            "skip_if": [],
+            "file_unless": null,
+            "file_requires": null,
+            "redact": false,
+            "description": "PHP version disclosure or directory listing is enabled.",
+            "impact": "Helps attackers find files and fingerprint the server.",
+            "remediation": "Set expose_php = Off and use \"Options -Indexes\".",
+            "references": []
+        },
+        {
+            "id": "PHP-SECRET-001",
+            "title": "Secret key or private key committed in code",
+            "severity": "critical",
+            "confidence": "confirmed",
+            "category": "hardcoded_secret",
+            "cwe": "CWE-798",
+            "owasp": "A07:2021 Identification and Authentication Failures",
+            "extensions": null,
+            "patterns": [
+                {
+                    "regex": "\\bAKIA[0-9A-Z]{16}\\b",
+                    "flags": "i"
+                },
+                {
+                    "regex": "\\bAIza[0-9A-Za-z_\\-]{35}\\b",
+                    "flags": "i"
+                },
+                {
+                    "regex": "\\bsk_live_[0-9a-zA-Z]{24,}\\b",
+                    "flags": "i"
+                },
+                {
+                    "regex": "\\bxox[baprs]-[0-9A-Za-z-]{10,}",
+                    "flags": "i"
+                },
+                {
+                    "regex": "\\bghp_[0-9A-Za-z]{36}\\b",
+                    "flags": "i"
+                },
+                {
+                    "regex": "-----BEGIN (?:RSA |EC |OPENSSH |DSA )?PRIVATE KEY-----",
+                    "flags": "i"
+                },
+                {
+                    "regex": "\\bsk-(?:proj-)?[A-Za-z0-9_\\-]{32,}",
+                    "flags": "i"
+                }
+            ],
+            "exclude": null,
+            "skip_if": [],
+            "file_unless": null,
+            "file_requires": null,
+            "redact": true,
+            "description": "A real-looking API key, access token or private key is stored in the source code.",
+            "impact": "Anyone with the code can use your cloud account, payment account or servers.",
+            "remediation": "Revoke the key now, create a new one, and load it from environment variables or a secret manager. Remove it from version history.",
+            "references": []
+        },
+        {
+            "id": "PHP-SECRET-002",
+            "title": "Hard-coded password or secret",
+            "severity": "high",
+            "confidence": "potential",
+            "category": "hardcoded_secret",
+            "cwe": "CWE-798",
+            "owasp": "A07:2021 Identification and Authentication Failures",
+            "extensions": [
+                "php",
+                "phtml",
+                "inc",
+                "js",
+                "json",
+                "yml",
+                "yaml",
+                "xml",
+                "ini"
+            ],
+            "patterns": [
+                {
+                    "regex": "[\"\\']?(?:password|passwd|pwd|pass|secret|api_?key|apikey|auth_?token|access_?token|private_?key|client_secret|db_pass(?:word)?)[\"\\']?\\s*(?:=>|=|:)\\s*[\"\\'][^\"\\'\\s$]{6,}[\"\\']",
+                    "flags": "i"
+                },
+                {
+                    "regex": "define\\s*\\(\\s*[\"\\'](?:DB_PASS(?:WORD)?|[A-Z_]*SECRET[A-Z_]*|[A-Z_]*API_KEY|[A-Z_]*PASSWORD)[\"\\']\\s*,\\s*[\"\\'][^\"\\']{4,}[\"\\']\\s*\\)",
+                    "flags": "i"
+                }
+            ],
+            "exclude": "getenv|env\\(|config\\(|\\$_ENV|\\$_SERVER|your[_ -]|changeme|change_me|example|xxxx|\\*{3,}|placeholder|hashed|<[a-z_ ]+>",
+            "skip_if": [],
+            "file_unless": null,
+            "file_requires": null,
+            "redact": true,
+            "description": "A password or secret value is written directly in the source code.",
+            "impact": "Anyone who can read the code or repository gets access to the system.",
+            "remediation": "Move secrets to environment variables or a .env file outside version control and rotate the exposed value.",
+            "references": []
+        },
+        {
+            "id": "PHP-SECRET-003",
+            "title": "Secret value in environment or config file",
+            "severity": "high",
+            "confidence": "potential",
+            "category": "hardcoded_secret",
+            "cwe": "CWE-798",
+            "owasp": "A07:2021 Identification and Authentication Failures",
+            "extensions": [
+                "env"
+            ],
+            "patterns": [
+                {
+                    "regex": "^\\s*[A-Z0-9_]*(?:PASSWORD|SECRET|API_KEY|APP_KEY|TOKEN|PRIVATE_KEY)\\s*=\\s*[^\\s#\"\\'$]{6,}",
+                    "flags": "i"
+                }
+            ],
+            "exclude": "your[_ -]|changeme|change_me|example|xxxx|\\*{3,}|placeholder|<[a-z_ ]+>|=null$|=base64:$",
+            "skip_if": [],
+            "file_unless": null,
+            "file_requires": null,
+            "redact": true,
+            "description": "A real-looking secret is stored in an environment file that is part of the project.",
+            "impact": "If this file is uploaded, shared or deployed in the web root, the secrets leak.",
+            "remediation": "Never ship .env files with real values. Keep them out of the project archive and the web root.",
+            "references": []
+        },
+        {
+            "id": "PHP-SECRET-004",
+            "title": "Database password written in the connection call",
+            "severity": "high",
+            "confidence": "potential",
+            "category": "hardcoded_secret",
+            "cwe": "CWE-798",
+            "owasp": "A07:2021 Identification and Authentication Failures",
+            "extensions": [
+                "php",
+                "phtml",
+                "inc"
+            ],
+            "patterns": [
+                {
+                    "regex": "\\b(?:mysqli_connect|mysql_connect|pg_connect)\\s*\\(\\s*[\"\\'][^\"\\']*[\"\\']\\s*,\\s*[\"\\'][^\"\\']*[\"\\']\\s*,\\s*[\"\\'][^\"\\']{3,}[\"\\']",
+                    "flags": "i"
+                },
+                {
+                    "regex": "new\\s+(?:mysqli|PDO)\\s*\\(\\s*[\"\\'][^\"\\']*[\"\\']\\s*,\\s*[\"\\'][^\"\\']*[\"\\']\\s*,\\s*[\"\\'][^\"\\']{3,}[\"\\']",
+                    "flags": "i"
+                }
+            ],
+            "exclude": null,
+            "skip_if": [
+                "PHP-SECRET-002"
+            ],
+            "file_unless": null,
+            "file_requires": null,
+            "redact": true,
+            "description": "The database password is passed as a literal string.",
+            "impact": "Leaked source code gives direct database access.",
+            "remediation": "Read the credentials from environment variables or a protected config file.",
+            "references": []
+        },
+        {
+            "id": "JS-XSS-001",
+            "title": "DOM XSS: untrusted data written into HTML",
+            "severity": "medium",
+            "confidence": "potential",
+            "category": "xss",
+            "cwe": "CWE-79",
+            "owasp": "A03:2021 Injection",
+            "extensions": [
+                "js",
+                "html",
+                "htm",
+                "php",
+                "phtml"
+            ],
+            "patterns": [
+                {
+                    "regex": "\\.(?:inner|outer)HTML\\s*\\+?=\\s*[^;]*(?:location|document\\.(?:URL|cookie|referrer)|\\.value\\b|params?\\b|query|input|\\$_(?:GET|POST|REQUEST))",
+                    "flags": "i"
+                },
+                {
+                    "regex": "\\bdocument\\.write(?:ln)?\\s*\\([^;]*(?:location|document\\.(?:URL|cookie|referrer)|\\.value\\b)",
+                    "flags": "i"
+                },
+                {
+                    "regex": "\\.html\\s*\\([^;]*(?:location|\\.val\\s*\\(\\))",
+                    "flags": "i"
+                }
+            ],
+            "exclude": null,
+            "skip_if": [],
+            "file_unless": null,
+            "file_requires": null,
+            "redact": false,
+            "description": "Browser-side code puts URL or form data straight into the page as HTML.",
+            "impact": "Script injection in the visitor's browser.",
+            "remediation": "Use textContent, or sanitise with a library such as DOMPurify before inserting HTML.",
+            "references": []
+        },
+        {
+            "id": "JS-EVAL-001",
+            "title": "eval() or new Function() in JavaScript",
+            "severity": "high",
+            "confidence": "potential",
+            "category": "code_execution",
+            "cwe": "CWE-95",
+            "owasp": "A03:2021 Injection",
+            "extensions": [
+                "js",
+                "html",
+                "htm"
+            ],
+            "patterns": [
+                {
+                    "regex": "\\beval\\s*\\(\\s*[^\\'\")]",
+                    "flags": "i"
+                },
+                {
+                    "regex": "\\bnew\\s+Function\\s*\\(",
+                    "flags": "i"
+                }
+            ],
+            "exclude": null,
+            "skip_if": [],
+            "file_unless": null,
+            "file_requires": null,
+            "redact": false,
+            "description": "JavaScript builds and runs code from text at runtime.",
+            "impact": "Script injection if any part of the text can be influenced by a user.",
+            "remediation": "Replace with JSON.parse or normal functions.",
+            "references": []
+        },
+        {
+            "id": "JS-STORAGE-001",
+            "title": "Authentication data stored in localStorage",
+            "severity": "low",
+            "confidence": "potential",
+            "category": "session",
+            "cwe": "CWE-922",
+            "owasp": "A02:2021 Cryptographic Failures",
+            "extensions": [
+                "js",
+                "html",
+                "htm",
+                "php"
+            ],
+            "patterns": [
+                {
+                    "regex": "(?:localStorage|sessionStorage)\\.setItem\\s*\\(\\s*[\"\\'](?:token|jwt|access_?token|auth|password|secret)",
+                    "flags": "i"
+                }
+            ],
+            "exclude": null,
+            "skip_if": [],
+            "file_unless": null,
+            "file_requires": null,
+            "redact": false,
+            "description": "Tokens kept in web storage can be stolen by any script that runs on the page (XSS).",
+            "impact": "Account takeover after any XSS flaw.",
+            "remediation": "Prefer HttpOnly, Secure, SameSite cookies for session tokens.",
+            "references": []
+        },
+        {
+            "id": "HTML-LINK-001",
+            "title": "target=\"_blank\" without rel=\"noopener\"",
+            "severity": "low",
+            "confidence": "potential",
+            "category": "misconfiguration",
+            "cwe": "CWE-1022",
+            "owasp": "A05:2021 Security Misconfiguration",
+            "extensions": [
+                "html",
+                "htm",
+                "php",
+                "phtml"
+            ],
+            "patterns": [
+                {
+                    "regex": "target\\s*=\\s*[\"\\']_blank[\"\\']",
+                    "flags": "i"
+                }
+            ],
+            "exclude": "rel\\s*=\\s*[\"\\'][^\"\\']*noopener",
+            "skip_if": [],
+            "file_unless": null,
+            "file_requires": null,
+            "redact": false,
+            "description": "Pages opened in a new tab can access the opener window.",
+            "impact": "Reverse tabnabbing / phishing.",
+            "remediation": "Add rel=\"noopener noreferrer\".",
+            "references": []
+        },
+        {
+            "id": "LARAVEL-SQLI-001",
+            "title": "Raw SQL expression contains user request data",
+            "severity": "high",
+            "confidence": "confirmed",
+            "category": "sql_injection",
+            "cwe": "CWE-89",
+            "owasp": "A03:2021 Injection",
+            "extensions": [
+                "php"
+            ],
+            "patterns": [
+                {
+                    "regex": "\\bDB::raw\\s*\\([^;]*\\$_(?:GET|POST|REQUEST|COOKIE)",
+                    "flags": "i"
+                },
+                {
+                    "regex": "\\b(?:whereRaw|havingRaw|orderByRaw)\\s*\\([^;]*\\$_(?:GET|POST|REQUEST)",
+                    "flags": "i"
+                }
+            ],
+            "exclude": null,
+            "skip_if": [],
+            "file_unless": null,
+            "file_requires": null,
+            "redact": false,
+            "description": "A raw database query expression directly interpolates request data without parameter bindings.",
+            "impact": "SQL injection allowing data extraction, tampering or privilege escalation.",
+            "remediation": "Pass query parameters as a second array of bindings to DB::raw or whereRaw.",
+            "references": []
+        },
+        {
+            "id": "LARAVEL-MASS-001",
+            "title": "Unrestricted Eloquent mass assignment ($guarded = [])",
+            "severity": "medium",
+            "confidence": "confirmed",
+            "category": "mass_assignment",
+            "cwe": "CWE-915",
+            "owasp": "A04:2021 Insecure Design",
+            "extensions": [
+                "php"
+            ],
+            "patterns": [
+                {
+                    "regex": "protected\\s+\\$guarded\\s*=\\s*\\[\\s*\\]\\s*;",
+                    "flags": "i"
+                }
+            ],
+            "exclude": null,
+            "skip_if": [],
+            "file_unless": null,
+            "file_requires": null,
+            "redact": false,
+            "description": "Setting $guarded = [] disables mass assignment protection on the Eloquent model entirely.",
+            "impact": "Attackers can overwrite sensitive columns such as is_admin, role, or account balances via crafted HTTP payloads.",
+            "remediation": "Use explicit $fillable attributes on models instead of an empty $guarded array.",
+            "references": []
+        },
+        {
+            "id": "LARAVEL-STORAGE-001",
+            "title": "Storage call uses unvalidated path from request",
+            "severity": "high",
+            "confidence": "confirmed",
+            "category": "path_traversal",
+            "cwe": "CWE-22",
+            "owasp": "A01:2021 Broken Access Control",
+            "extensions": [
+                "php"
+            ],
+            "patterns": [
+                {
+                    "regex": "\\bStorage::(?:disk\\([^)]*\\)->)?(?:get|put|delete|download)\\s*\\([^;]*\\$_(?:GET|POST|REQUEST)",
+                    "flags": "i"
+                }
+            ],
+            "exclude": "basename",
+            "skip_if": [],
+            "file_unless": null,
+            "file_requires": null,
+            "redact": false,
+            "description": "Storage method is invoked with request data, which may allow path traversal ../ to read or delete arbitrary files.",
+            "impact": "Arbitrary file read or deletion across the server filesystem.",
+            "remediation": "Sanitize the filename with basename() and validate against an allow-list of directories.",
+            "references": []
+        },
+        {
+            "id": "LARAVEL-BLADE-001",
+            "title": "Unescaped Blade statement renders user request data",
+            "severity": "high",
+            "confidence": "confirmed",
+            "category": "xss",
+            "cwe": "CWE-79",
+            "owasp": "A03:2021 Injection",
+            "extensions": [
+                "php"
+            ],
+            "patterns": [
+                {
+                    "regex": "\\{!!\\s*[^!]*\\$_(?:GET|POST|REQUEST|COOKIE)[^!]*!!\\}",
+                    "flags": "i"
+                }
+            ],
+            "exclude": "e\\(|htmlspecialchars",
+            "skip_if": [],
+            "file_unless": null,
+            "file_requires": null,
+            "redact": false,
+            "description": "Blade raw echo syntax {!! !!} bypasses HTML escaping and prints request data directly.",
+            "impact": "Cross-Site Scripting (XSS) allowing execution of arbitrary JavaScript in victim browsers.",
+            "remediation": "Use standard escaped Blade syntax {{ $var }} instead of unescaped {!! !!}.",
+            "references": []
+        }
+    ]
+}
