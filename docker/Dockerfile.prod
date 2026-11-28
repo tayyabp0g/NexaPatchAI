@@ -6,6 +6,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     supervisor \
     git \
     unzip \
+    ca-certificates \
+    python3 \
+    python3-pip \
     libzip-dev \
     libpng-dev \
     libonig-dev \
@@ -13,6 +16,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && docker-php-ext-install pdo_mysql mbstring zip opcache bcmath pcntl \
     && rm -rf /var/lib/apt/lists/*
+
+RUN python3 -m pip install --break-system-packages semgrep
 
 # Install Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
@@ -29,6 +34,8 @@ RUN composer install --no-dev --optimize-autoloader --no-interaction
 COPY docker/nginx.conf /etc/nginx/sites-available/default
 COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 COPY docker/uploads.ini /usr/local/etc/php/conf.d/uploads.ini
+COPY docker/entrypoint.sh /usr/local/bin/nexapatch-entrypoint
+RUN chmod +x /usr/local/bin/nexapatch-entrypoint
 
 # Set permissions
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache \
@@ -38,4 +45,4 @@ RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cac
 
 EXPOSE 80
 
-CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
+ENTRYPOINT ["/usr/local/bin/nexapatch-entrypoint"]
